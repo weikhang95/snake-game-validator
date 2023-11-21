@@ -1,5 +1,3 @@
-// game.dto.ts
-
 export interface State {
   gameId: string;
   width: number;

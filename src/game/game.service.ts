@@ -1,14 +1,17 @@
 // game.service.ts
 
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
-import { State, ValidateResponse, ValidateRequest } from './dto/game.dto';
+import { State, ValidateResponse } from './dto/game.dto';
 import { v4 as uuid } from 'uuid';
 
 @Injectable()
 export class GameService {
   startNewGame(width: number, height: number): State | ValidateResponse {
     if (isNaN(width) || isNaN(height) || width < 1 || height < 1) {
-      return { message: 'Invalid width or height', gameState: null };
+      throw new HttpException(
+        'Invalid width or height',
+        HttpStatus.BAD_REQUEST,
+      );
     }
     const gameId = uuid();
     // Implement logic to start a new game with provided width and height
@@ -20,8 +23,11 @@ export class GameService {
       fruit: this.generateFruitPosition(width, height), // Generate initial fruit position
       snake: { x: 0, y: 0, velX: 1, velY: 0 }, // Initialize snake position and velocity
     };
-
-    return gameState;
+    const response: ValidateResponse = {
+      message: 'New game started',
+      gameState: gameState,
+    };
+    return response;
   }
 
   validateTicks(
@@ -44,15 +50,21 @@ export class GameService {
       // Check for immediate 180-degree turn (invalid move)
       if (
         (snake.velX === velX * -1 && velX !== 0) ||
-        (snake.velY === velY * -1 && velY !== 0)
+        (snake.velY === velY * -1 && velY !== 0) ||
+        (!(velX === 0 && velY !== 0) && !(velX !== 0 && velY === 0))
       ) {
-        throw new HttpException('Invalid move', HttpStatus.I_AM_A_TEAPOT); // 418: I'm a teapot
+        throw new HttpException('Invalid move', HttpStatus.I_AM_A_TEAPOT);
       }
 
       // Check if the snake hits the game bounds
       if (snake.x < 0 || snake.y < 0 || snake.x >= width || snake.y >= height) {
         throw new HttpException('Game Over', HttpStatus.I_AM_A_TEAPOT);
       }
+
+      // Update snake's velocity
+      snake.velX = velX;
+      snake.velY = velY;
+
       // Update snake's position based on the velocity
       snake.x += velX;
       snake.y += velY;
@@ -68,8 +80,11 @@ export class GameService {
         }
       }
     }
-
-    return { message: 'Valid state & ticks', gameState: state };
+    const response: ValidateResponse = {
+      message: 'Valid state, moves, ticks and fruit found',
+      gameState: state,
+    };
+    return response;
   }
 
   private generateFruitPosition(width: number, height: number) {

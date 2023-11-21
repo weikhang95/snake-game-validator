@@ -8,13 +8,15 @@ import {
   Query,
   HttpCode,
   HttpStatus,
-  Param,
   HttpException,
+  UseFilters,
 } from '@nestjs/common';
 import { GameService } from './game.service';
 import { State, ValidateRequest, ValidateResponse } from './dto/game.dto';
+import { HttpExceptionFilter } from 'src/http-exception.filter';
 
 @Controller()
+@UseFilters(new HttpExceptionFilter())
 export class GameController {
   constructor(private readonly gameService: GameService) {}
 
@@ -28,7 +30,16 @@ export class GameController {
       const gameState = await this.gameService.startNewGame(w, h);
       return gameState;
     } catch (error) {
-      return { message: 'Invalid request' };
+      if (error instanceof HttpException) {
+        // If it's an HTTP exception, return the status and message
+        throw error;
+      } else {
+        // For other types of errors, return a 500 Internal Server Error
+        throw new HttpException(
+          'Internal server error',
+          HttpStatus.INTERNAL_SERVER_ERROR,
+        );
+      }
     }
   }
 
@@ -38,6 +49,10 @@ export class GameController {
     @Body() body: ValidateRequest,
   ): Promise<ValidateResponse | any> {
     try {
+      if (!body || !body.state || !body.ticks || !Array.isArray(body.ticks)) {
+        throw new HttpException('Invalid request', HttpStatus.BAD_REQUEST);
+      }
+
       const validationResponse = await this.gameService.validateTicks(
         body.state,
         body.ticks,
@@ -45,7 +60,6 @@ export class GameController {
       return validationResponse;
     } catch (error) {
       if (error instanceof HttpException) {
-        console.log('error', error);
         // If it's an HTTP exception, return the status and message
         throw error;
       } else {
