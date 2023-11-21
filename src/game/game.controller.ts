@@ -1,5 +1,3 @@
-// game.controller.ts
-
 import {
   Controller,
   Get,
@@ -20,8 +18,13 @@ import { HttpExceptionFilter } from 'src/http-exception.filter';
 export class GameController {
   constructor(private readonly gameService: GameService) {}
 
+  /**
+   * Controller method to start a new game with the provided width and height.
+   * @param w The width of the game grid obtained from the query parameter.
+   * @param h The height of the game grid obtained from the query parameter.
+   * @returns A Promise resolving to a State object representing the game state or throws HttpException if an error occurs.
+   */
   @Get('new')
-  //query param w and h
   async startNewGame(
     @Query('w') w: number,
     @Query('h') h: number,
@@ -43,6 +46,11 @@ export class GameController {
     }
   }
 
+  /**
+   * Controller method to validate the snake's movement based on ticks provided in the request body.
+   * @param body The request body containing state and an array of ticks.
+   * @returns A Promise resolving to a ValidateResponse object or throws HttpException if an error occurs.
+   */
   @Post('validate')
   @HttpCode(HttpStatus.OK)
   async validateTicks(
